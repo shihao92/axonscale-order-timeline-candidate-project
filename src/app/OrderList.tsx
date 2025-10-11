@@ -49,12 +49,12 @@ export default function BuyerOrderList() {
       const buyerId = user.email;
       const response = await orderApi.getOrdersByBuyer(buyerId);
       console.log('API Response:', response);
-      
+
       // Handle the response properly based on its shape
-      const orderArray = response && typeof response === 'object' && 'orders' in response 
-        ? (response as { orders: Order[] }).orders 
+      const orderArray = response && typeof response === 'object' && 'orders' in response
+        ? (response as { orders: Order[] }).orders
         : [];
-      
+
       setOrders(orderArray);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
@@ -70,29 +70,29 @@ export default function BuyerOrderList() {
       fetchOrders();
     }
   }, [user?.email, fetchOrders]);
-  
+
   // Fetch tracking details for all shipping orders when orders are loaded
   useEffect(() => {
     const fetchAllTrackingDetails = async () => {
-      const shippingOrdersWithTracking = orders.filter(order => 
-        order.status === ORDER_STATUS.PRODUCTION_COMPLETED && 
-        order.trackingNumber && 
-        !trackingDetails[order.orderId] && 
+      const shippingOrdersWithTracking = orders.filter(order =>
+        order.status === ORDER_STATUS.PRODUCTION_COMPLETED &&
+        order.trackingNumber &&
+        !trackingDetails[order.orderId] &&
         !loadingTracking[order.orderId]
       );
-      
+
       if (shippingOrdersWithTracking.length === 0) return;
-      
+
       console.log(`Fetching tracking details for ${shippingOrdersWithTracking.length} shipping orders`);
-      
+
       // Create a new loading state object
       const newLoadingState: Record<string, boolean> = {};
       shippingOrdersWithTracking.forEach(order => {
         newLoadingState[order.orderId] = true;
       });
-      
+
       setLoadingTracking(prev => ({ ...prev, ...newLoadingState }));
-      
+
       // Fetch tracking details for each order
       const trackingPromises = shippingOrdersWithTracking.map(async (order) => {
         try {
@@ -105,9 +105,9 @@ export default function BuyerOrderList() {
         }
         return null;
       });
-      
+
       const results = await Promise.all(trackingPromises);
-      
+
       // Update tracking details
       const newTrackingDetails: Record<string, any> = {};
       results.forEach(result => {
@@ -115,18 +115,18 @@ export default function BuyerOrderList() {
           newTrackingDetails[result.orderId] = result.details;
         }
       });
-      
+
       setTrackingDetails(prev => ({ ...prev, ...newTrackingDetails }));
-      
+
       // Reset loading state
       const resetLoadingState: Record<string, boolean> = {};
       shippingOrdersWithTracking.forEach(order => {
         resetLoadingState[order.orderId] = false;
       });
-      
+
       setLoadingTracking(prev => ({ ...prev, ...resetLoadingState }));
     };
-    
+
     if (orders.length > 0) {
       fetchAllTrackingDetails();
     }
@@ -135,7 +135,7 @@ export default function BuyerOrderList() {
   // Handler for continuing payment
   const handleContinuePayment = async (orderId: string) => {
     setContinuingPayment(prev => ({ ...prev, [orderId]: true }));
-    
+
     try {
       const currentUrl = window.location.origin;
       const successUrl = `${currentUrl}/buyer/payment/success?orderId=${orderId}`;
@@ -182,7 +182,7 @@ export default function BuyerOrderList() {
     if (!priceChangeModal.orderId) return;
 
     setContinuingPayment(prev => ({ ...prev, [priceChangeModal.orderId]: true }));
-    
+
     try {
       const currentUrl = window.location.origin;
       const successUrl = `${currentUrl}/buyer/payment/success?orderId=${priceChangeModal.orderId}`;
@@ -210,7 +210,7 @@ export default function BuyerOrderList() {
   const handleClosePriceChangeModal = () => {
     setPriceChangeModal({ isOpen: false, orderId: '', priceChanges: null });
   };
-  
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -236,66 +236,56 @@ export default function BuyerOrderList() {
     // Check for artifacts in productSpec (similar to quote list)
     const artifacts = order.productSpec?.product_specifications?.artifacts;
     const uploadedArtifacts = artifacts?.uploaded_artifacts || [];
-    const imageArtifacts = uploadedArtifacts.filter((artifact: any) => 
+    const imageArtifacts = uploadedArtifacts.filter((artifact: any) =>
       artifact.content_type?.startsWith('image/') && artifact.s3_url
     );
-    
+
     // Get the first image artifact for thumbnail
     return imageArtifacts[0];
   };
-  
-  
+
+
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {[...Array(3)].map((_, i) => (
           <Card key={i} className="overflow-hidden">
-            <CardHeader className="pb-3">
-              <div className="flex gap-2  flex-col flex-wrap sm:flex-row sm:justify-between items-start">
-                <div className="flex items-start sm:items-center space-x-3 flex-1 min-w-0">
+            <CardHeader className="p-3 sm:p-4 md:pb-3">
+              <div className="flex gap-3 flex-col sm:flex-row sm:justify-between items-start">
+                <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0 w-full sm:w-auto">
                   {/* Thumbnail skeleton */}
-                  <Skeleton className="w-12 h-12 rounded-md flex-shrink-0" />
-                  
+                  <Skeleton className="w-12 h-12 sm:w-14 sm:h-14 rounded-md flex-shrink-0" />
+
                   {/* Content skeleton */}
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
+                  <div className="space-y-1.5 sm:space-y-2 min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
                       <Skeleton className="h-5 w-32 sm:h-6 sm:w-48" />
-                      <Skeleton className="h-3 w-12 sm:h-4 sm:w-16" />
                     </div>
-                    <Skeleton className="h-4 w-32 mb-1" />
-                    <div className="sm:flex items-center gap-2 hidden ">
+                    <Skeleton className="h-3.5 sm:h-4 w-32 sm:w-40 mb-1" />
+                    <div className="hidden sm:flex items-center gap-2">
                       <Skeleton className="h-3 w-20" />
                       <Skeleton className="h-3 w-2" />
                       <Skeleton className="h-3 w-20" />
                       <Skeleton className="h-3 w-2" />
                       <Skeleton className="h-3 w-24" />
                     </div>
-                    <div className="flex flex-col items-start gap-2 sm:hidden">
-                      <div className="flex gap-1 items-center">
-                        <Skeleton className="h-2 w-2" />
-                        <Skeleton className="h-3 w-20" />
-                      </div>
-                      <div className="flex gap-1 items-center">
-                        <Skeleton className="h-2 w-2" />
-                        <Skeleton className="h-3 w-20" />
-                      </div>
-                      <div className="flex gap-1 items-center">
-                        <Skeleton className="h-2 w-2" />
-                        <Skeleton className="h-3 w-24" />
-                      </div>
+                    <div className="flex flex-col gap-1 sm:hidden">
+                      <Skeleton className="h-3 w-28" />
+                      <Skeleton className="h-3 w-32" />
+                      <Skeleton className="h-3 w-36" />
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Status badges skeleton */}
-                <div className="flex flex-col gap-2 self-end">
+                <div className="flex flex-col gap-1.5 sm:gap-2 w-full sm:w-auto sm:self-start">
                   <div className="flex items-center gap-2">
-                    <Skeleton className="h-3 w-16" />
-                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-3 w-16 sm:w-20" />
+                    <Skeleton className="h-5 w-20 sm:w-24" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <Skeleton className="h-3 w-12" />
-                    <Skeleton className="h-5 w-16" />
+                    <Skeleton className="h-3 w-12 sm:w-16" />
+                    <Skeleton className="h-5 w-16 sm:w-20" />
                   </div>
                 </div>
               </div>
@@ -307,8 +297,8 @@ export default function BuyerOrderList() {
   }
 
   const activeOrders = sortedOrders.filter(order => order.status !== ORDER_STATUS.PRODUCTION_COMPLETED);
-  const shippingOrders = sortedOrders.filter(order => 
-    order.status === ORDER_STATUS.PRODUCTION_COMPLETED && 
+  const shippingOrders = sortedOrders.filter(order =>
+    order.status === ORDER_STATUS.PRODUCTION_COMPLETED &&
     (!order.shipmentStatus || order.shipmentStatus !== SHIPMENT_STATUS.DELIVERED)
   );
   const completedOrders = sortedOrders.filter(order => order.status === ORDER_STATUS.PRODUCTION_COMPLETED && order.shipmentStatus === SHIPMENT_STATUS.DELIVERED);
@@ -326,16 +316,16 @@ export default function BuyerOrderList() {
     if (trackingDetails[order.orderId] && trackingDetails[order.orderId].items?.length > 0) {
       const details = trackingDetails[order.orderId];
       const isDelivered = details.status === 'Delivered';
-      
+
       // Show only the latest update
       const latestUpdate = details.items[0];
-      
+
       return (
         <div className="mt-3 border-t pt-3 border-dashed border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Latest Update</h4>
           </div>
-          
+
           <div className="flex items-start gap-2">
             <div className="flex-shrink-0 mt-1">
               <div className={`w-3 h-3 rounded-full ${isDelivered ? 'bg-green-500' : 'bg-blue-500'}`} />
@@ -357,7 +347,7 @@ export default function BuyerOrderList() {
         </div>
       );
     }
-    
+
     return null;
   };
 
@@ -374,7 +364,7 @@ export default function BuyerOrderList() {
     if (trackingDetails[order.orderId]) {
       const details = trackingDetails[order.orderId];
       const isDelivered = details.status === 'Delivered';
-      
+
       return (
         <div className="w-full space-y-4">
           {/* Tracking History - Skip the blue banner since it's already shown in the card */}
@@ -383,11 +373,11 @@ export default function BuyerOrderList() {
               <h3 className="text-sm font-medium text-muted-foreground">Tracking History</h3>
               <div className="space-y-3 max-h-60 overflow-y-auto pr-2 -mr-2">
                 {details.items.map((item: any, index: number) => (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className={`border-l-2 pl-4 py-2 relative ${index === 0 ? (isDelivered ? 'border-green-400' : 'border-blue-400') : 'border-gray-200'}`}
                   >
-                    <div 
+                    <div
                       className={`absolute w-3 h-3 rounded-full -left-[6.5px] top-3 ${index === 0 ? (isDelivered ? 'bg-green-400' : 'bg-blue-400') : 'bg-gray-300'}`}
                     ></div>
                     <div className="flex items-baseline justify-between">
@@ -408,7 +398,7 @@ export default function BuyerOrderList() {
               </div>
             </div>
           )}
-          
+
           {/* Additional Details */}
           {details.destination && (
             <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
@@ -432,7 +422,7 @@ export default function BuyerOrderList() {
 
   const renderOrderSummaryCard = (order: Order) => {
     const isExpanded = expandedOrderId === order.orderId;
-    
+
     return (
       <Collapsible
         key={order.orderId}
@@ -441,11 +431,11 @@ export default function BuyerOrderList() {
         className="w-full"
       >
         <Card className="overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex justify-between items-start sm:flex-row flex-col gap-2">
-              <div className="flex  items-center space-x-3 flex-1 min-w-0">
+          <CardHeader className="p-3 sm:p-4 md:p-6 pb-3">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+              <div className="flex items-start gap-3 flex-1 min-w-0 w-full sm:w-auto">
                 {/* Product Thumbnail */}
-                <div className="w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
                   {(() => {
                     const thumbnail = getProductThumbnail(order);
                     return thumbnail?.s3_url ? (
@@ -455,43 +445,34 @@ export default function BuyerOrderList() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <Package className="h-6 w-6 text-gray-400" />
+                      <Package className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
                     );
                   })()}
                 </div>
-                
+
                 {/* Order Details */}
                 <div className="space-y-1 min-w-0 flex-1">
-                  <CardTitle className="text-xl font-bold text-foreground">
+                  <CardTitle className="text-base sm:text-lg md:text-xl font-bold text-foreground leading-tight">
                     {limitWords(order.productSpec?.productName || 'Product', 5)}
                   </CardTitle>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
                     Supplier: {order.supplierId}
                   </div>
-                  <div className="sm:flex hidden items-center gap-2 text-xs text-muted-foreground">
+                  <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                     <span>Order #{order.orderId.slice(0, 8)}</span>
                     <span>•</span>
                     <span>Quote #{order.quoteId.slice(0, 8)}</span>
                     <span>•</span>
                     <span>Created {formatDate(order.createdAt)}</span>
                   </div>
-                  <div className="flex flex-col sm:hidden items-start text-xs text-muted-foreground">
-                    <div className="flex flex-row justify-start ">
-                      <span>•</span>
-                      <span>Order #{order.orderId.slice(0, 8)}</span>
-                    </div>
-                    <div className="flex flex-row justify-start">
-                      <span>•</span>
-                      <span>Quote #{order.quoteId.slice(0, 8)}</span>
-                    </div>
-                    <div className="flex flex-row justify-start">
-                      <span>•</span>
-                      <span>Created {formatDate(order.createdAt)}</span>
-                    </div>
+                  <div className="flex flex-col gap-0.5 sm:hidden text-xs text-muted-foreground">
+                    <span>• Order #{order.orderId.slice(0, 8)}</span>
+                    <span>• Quote #{order.quoteId.slice(0, 8)}</span>
+                    <span>• Created {formatDate(order.createdAt)}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1.5 sm:gap-2 w-full sm:w-auto">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground font-medium">Production:</span>
                   <Badge variant={
@@ -506,7 +487,7 @@ export default function BuyerOrderList() {
                     <Badge variant={
                       order.paymentStatus === PAYMENT_STATUS.PAID ? "success" :
                       order.paymentStatus === PAYMENT_STATUS.PENDING ? "secondary" :
-                      order.paymentStatus === PAYMENT_STATUS.FAILED ? "destructive" : 
+                      order.paymentStatus === PAYMENT_STATUS.FAILED ? "destructive" :
                       order.paymentStatus === PAYMENT_STATUS.ADJUSTMENT_REQUIRED ? "secondary" : "outline"
                     } className="text-xs">
                       {order.paymentStatus === PAYMENT_STATUS.PAID ? 'Paid' :
@@ -530,22 +511,21 @@ export default function BuyerOrderList() {
               </div>
             </div>
           </CardHeader>
-          
-          <CardContent className="pt-0">
-            <div className="flex justify-between items-center">
-              <div className="space-y-2">
-                
+
+          <CardContent className="pt-0 p-3 sm:p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+              <div className="space-y-2 flex-1">
                 {/* Status-specific info */}
                 {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && order.trackingNumber && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Package className="h-4 w-4 text-primary" />
-                    <span>Tracking: {order.trackingNumber}</span>
+                  <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                    <Package className="h-4 w-4 text-primary flex-shrink-0" />
+                    <span className="break-all">Tracking: {order.trackingNumber}</span>
                     {order.trackingUrl && (
-                      <a 
-                        href={order.trackingUrl} 
-                        target="_blank" 
+                      <a
+                        href={order.trackingUrl}
+                        target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline flex items-center gap-1"
+                        className="text-blue-500 hover:underline flex items-center gap-1 flex-shrink-0"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <ExternalLink className="h-3 w-3" />
@@ -553,15 +533,15 @@ export default function BuyerOrderList() {
                     )}
                   </div>
                 )}
-                
+
                 {/* Latest tracking update for shipped orders */}
-                {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && order.trackingNumber && 
+                {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && order.trackingNumber &&
                  !isExpanded && renderLatestTrackingUpdate(order)}
               </div>
-              
+
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="px-2">
-                  <span className="text-xs text-primary sm:hover:underline flex items-center gap-1">
+                <Button variant="ghost" size="sm" className="px-2 py-1 h-auto self-start sm:self-center">
+                  <span className="text-xs text-primary sm:hover:underline flex items-center gap-1 whitespace-nowrap">
                     {isExpanded ? (
                       <>Hide Details <ChevronUp className="h-3 w-3" /></>
                     ) : (
@@ -572,7 +552,7 @@ export default function BuyerOrderList() {
               </CollapsibleTrigger>
             </div>
           </CardContent>
-          
+
           <CollapsibleContent>
             <Separator />
             <CardContent className="pt-4">
@@ -585,7 +565,7 @@ export default function BuyerOrderList() {
                     <TabsTrigger value="tracking">Tracking</TabsTrigger>
                   )}
                 </TabsList>
-                
+
                 <TabsContent value="timeline" className="mt-4">
                   <div className="space-y-3">
                     <h4 className="font-medium">Production Timeline</h4>
@@ -616,10 +596,10 @@ export default function BuyerOrderList() {
                                       // Extract filename from full path (get everything after the last '/')
                                       const filename = attachment.split('/').pop() || attachment;
                                       return (
-                                        <a 
+                                        <a
                                           key={i}
-                                          href={attachmentUrl} 
-                                          target="_blank" 
+                                          href={attachmentUrl}
+                                          target="_blank"
                                           rel="noopener noreferrer"
                                           className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-xs transition-colors"
                                           title={attachment} // Show full path on hover
@@ -627,7 +607,7 @@ export default function BuyerOrderList() {
                                           📎 {filename} <ExternalLink className="h-3 w-3" />
                                         </a>
                                       );
-                                    })}  
+                                    })}
                                   </div>
                                 </div>
                               )}
@@ -641,7 +621,7 @@ export default function BuyerOrderList() {
                     )}
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="payment" className="mt-4">
                   <div className="space-y-3">
                     <h4 className="font-medium">Payment Information</h4>
@@ -668,9 +648,9 @@ export default function BuyerOrderList() {
                         <div>
                           <span className="text-muted-foreground">Est. Shipping:</span>
                           <p>
-                            {order.estimatedShippingDaysMin && order.estimatedShippingDaysMax 
+                            {order.estimatedShippingDaysMin && order.estimatedShippingDaysMax
                               ? `${order.estimatedShippingDaysMin}-${order.estimatedShippingDaysMax} days`
-                              : order.estimatedShippingDaysMin 
+                              : order.estimatedShippingDaysMin
                                 ? `${order.estimatedShippingDaysMin}+ days`
                                 : `up to ${order.estimatedShippingDaysMax} days`
                             }
@@ -680,7 +660,7 @@ export default function BuyerOrderList() {
                     </div>
                   </div>
                 </TabsContent>
-                
+
                 {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && (
                   <TabsContent value="tracking" className="mt-4">
                     {order.trackingNumber ? renderTrackingInfo(order) : (
@@ -706,15 +686,15 @@ export default function BuyerOrderList() {
           <TabsTrigger value="shipping" className="text-wrap">Shipping Orders</TabsTrigger>
           <TabsTrigger value="completed" className="text-wrap">Completed Orders</TabsTrigger>
         </TabsList>
-        
+
         <div className="flex items-center gap-3 self-end">
           <OrderSortSelect value={sortOption} onChange={setSortOption} />
         </div>
       </div>
-      
+
       <TabsContent value="active">
         {viewMode === 'timeline' ? (
-          <TimelineView 
+          <TimelineView
             orders={activeOrders}
             onOrderClick={(order) => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}
             trackingDetails={trackingDetails}
@@ -734,10 +714,10 @@ export default function BuyerOrderList() {
           </div>
         )}
       </TabsContent>
-      
+
       <TabsContent value="shipping">
         {viewMode === 'timeline' ? (
-          <TimelineView 
+          <TimelineView
             orders={shippingOrders}
             onOrderClick={(order) => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}
             trackingDetails={trackingDetails}
@@ -760,7 +740,7 @@ export default function BuyerOrderList() {
 
       <TabsContent value="completed">
         {viewMode === 'timeline' ? (
-          <TimelineView 
+          <TimelineView
             orders={completedOrders}
             onOrderClick={(order) => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}
             trackingDetails={trackingDetails}
@@ -780,7 +760,7 @@ export default function BuyerOrderList() {
           </div>
         )}
       </TabsContent>
-      
+
       {/* Price Change Modal */}
       <PriceChangeModal
         isOpen={priceChangeModal.isOpen}

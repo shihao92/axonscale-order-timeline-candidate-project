@@ -50,7 +50,7 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
   const getProductThumbnail = (order: Order) => {
     const artifacts = order.productSpec?.product_specifications?.artifacts;
     const uploadedArtifacts = artifacts?.uploaded_artifacts || [];
-    const imageArtifacts = uploadedArtifacts.filter((artifact: any) => 
+    const imageArtifacts = uploadedArtifacts.filter((artifact: any) =>
       artifact.content_type?.startsWith('image/') && artifact.s3_url
     );
     return imageArtifacts[0];
@@ -76,7 +76,7 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
     if (trackingDetails[order.orderId] && trackingDetails[order.orderId].items?.length > 0) {
       const details = trackingDetails[order.orderId];
       const latestUpdate = details.items[0];
-      
+
       return (
         <div className="mt-2 border-t pt-2 border-dashed border-gray-200 dark:border-gray-700">
           <div className="flex items-start gap-2">
@@ -95,7 +95,7 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
         </div>
       );
     }
-    
+
     return null;
   };
 
@@ -112,7 +112,7 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
     if (trackingDetails[order.orderId]) {
       const details = trackingDetails[order.orderId];
       const isDelivered = details.status === 'Delivered';
-      
+
       return (
         <div className="w-full space-y-4">
           {details.items && details.items.length > 0 && (
@@ -120,11 +120,11 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
               <h3 className="text-sm font-medium text-muted-foreground">Tracking History</h3>
               <div className="space-y-3 max-h-48 overflow-y-auto pr-2 -mr-2">
                 {details.items.map((item: any, index: number) => (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className={`border-l-2 pl-3 py-2 relative ${index === 0 ? (isDelivered ? 'border-green-400' : 'border-blue-400') : 'border-gray-200'}`}
                   >
-                    <div 
+                    <div
                       className={`absolute w-2 h-2 rounded-full -left-[5px] top-3 ${index === 0 ? (isDelivered ? 'bg-green-400' : 'bg-blue-400') : 'bg-gray-300'}`}
                     ></div>
                     <div className="flex items-baseline justify-between">
@@ -145,7 +145,7 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
               </div>
             </div>
           )}
-          
+
           {details.destination && (
             <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
               <p className="text-xs text-muted-foreground">
@@ -177,27 +177,27 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
     <div className="space-y-4">
       {/* Timeline Legend */}
       <Card className="bg-slate-50 dark:bg-slate-900">
-        <CardContent className="p-3 sm:p-6 py-3">
-          <div className="flex flex-col items-center  gap-2 sm:flex-row sm:items-center sm:justify-between text-sm">
-            <div className="flex items-center sm:gap-4 gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-2 bg-blue-500 rounded"></div>
+        <CardContent className="p-3 sm:p-4 md:p-6">
+          <div className="flex flex-col gap-2 sm:gap-3">
+            <div className="flex items-center justify-center sm:justify-start gap-3 sm:gap-4 flex-wrap text-xs sm:text-sm">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-4 h-2 bg-blue-500 rounded flex-shrink-0"></div>
                 <span>Production</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-2 bg-green-500 rounded"></div>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-4 h-2 bg-green-500 rounded flex-shrink-0"></div>
                 <span>Shipping</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-2 bg-green-500 opacity-40 rounded"></div>
-                <span className="text-xs">Range estimate</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-4 h-2 bg-green-500 opacity-40 rounded flex-shrink-0"></div>
+                <span className="text-xs">Range</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-0.5 h-4 bg-red-500"></div>
-                <span>Current Time</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-0.5 h-4 bg-red-500 flex-shrink-0"></div>
+                <span>Now</span>
               </div>
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-center sm:text-left text-muted-foreground">
               Lighter areas show uncertainty range • Click cards for details
             </div>
           </div>
@@ -210,7 +210,7 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
           const calculation = timelineCalculations[order.orderId];
           const thumbnail = getProductThumbnail(order);
           const isExpanded = expandedOrderId === order.orderId;
-          
+
           if (!calculation) return null;
 
           return (
@@ -220,18 +220,18 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
               onOpenChange={() => setExpandedOrderId(isExpanded ? null : order.orderId)}
               className="w-full"
             >
-              <Card 
+              <Card
                 className={`overflow-hidden transition-all duration-200 hover:shadow-md ${
                   calculation.isOverdue && calculation.currentPhase !== 'completed' && order.shipmentStatus !== 'DELIVERED' ? 'border-red-200 bg-red-50/30' : ''
                 }`}
               >
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <div className="space-y-3">
                     {/* Order Header */}
-                    <div className="flex flex-wrap gap-2 items-center sm:justify-between">
-                      <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 items-start sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                         {/* Thumbnail */}
-                        <div className="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
                           {thumbnail?.s3_url ? (
                             <PresignedImage
                               s3Url={thumbnail.s3_url}
@@ -242,13 +242,13 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                             <Package className="h-5 w-5 text-gray-400" />
                           )}
                         </div>
-                        
+
                         {/* Order Info */}
-                        <div>
-                          <h3 className="font-medium text-sm">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-medium text-sm sm:text-base leading-tight truncate">
                             {limitWords(order.productSpec?.product_specifications?.product_name || order.productSpec?.productName || 'Product')}
                           </h3>
-                          <div className="sm:flex items-center gap-2 text-xs text-muted-foreground hidden">
+                          <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                             <span>#{order.orderId.slice(0, 8)}</span>
                             <span>•</span>
                             <span>Quote #{order.quoteId.slice(0, 8)}</span>
@@ -263,39 +263,26 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                               </>
                             )}
                           </div>
-                          <div className="flex flex-col items-start text-xs text-muted-foreground sm:hidden">
-                            <div className="flex justify-start items-center">
-                              <span>•</span>
-                              <span>#{order.orderId.slice(0, 8)}</span>
-                            </div>
-                            <div className="flex justify-start items-center">
-                              <span>•</span>
-                              <span>Quote #{order.quoteId.slice(0, 8)}</span>
-                            </div>
-                            <div className="flex justify-start items-center">
-                              <span>•</span>
-                              <span>{order.supplierId}</span>
-                            </div>
-                            <div className="flex justify-start items-center">
-                              {order.orderType && (
-                              <>
+                          <div className="flex flex-col gap-0.5 text-xs text-muted-foreground sm:hidden">
+                            <span>• #{order.orderId.slice(0, 8)} • Quote #{order.quoteId.slice(0, 8)}</span>
+                            <span>• {order.supplierId}</span>
+                            {order.orderType && (
+                              <div className="flex items-center gap-1">
                                 <span>•</span>
                                 <Badge variant="outline" className="text-xs px-2 py-0.5 h-5">
                                   {order.orderType.replace('_', ' ')}
                                 </Badge>
-                              </>
-                              )}  
-                            </div>
-                            
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
 
                       {/* Status Badges */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground font-medium">Production:</span>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="flex flex-col gap-1 sm:gap-1.5 flex-1 sm:flex-initial">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Production:</span>
                             <Badge variant={
                               order.status === ORDER_STATUS.PRODUCTION_COMPLETED ? "success" : "default"
                             } className="text-xs">
@@ -303,8 +290,8 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                             </Badge>
                           </div>
                           {order.paymentStatus && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground font-medium">Payment:</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                              <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Payment:</span>
                               <Badge variant={
                                 order.paymentStatus === PAYMENT_STATUS.PAID ? "success" :
                                 order.paymentStatus === PAYMENT_STATUS.PENDING ? "secondary" :
@@ -318,8 +305,8 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                             </div>
                           )}
                           {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && order.shipmentStatus && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground font-medium">Shipment:</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                              <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Shipment:</span>
                               <Badge variant={
                                 order.shipmentStatus === SHIPMENT_STATUS.DELIVERED ? "success" : "secondary"
                               } className="text-xs">
@@ -328,26 +315,26 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                             </div>
                           )}
                         </div>
-                        
+
                         {calculation.isOverdue && calculation.currentPhase !== 'completed' && order.shipmentStatus !== 'DELIVERED' && (
                           <AlertCircle className="w-4 h-4 text-red-500" />
                         )}
-                        
+
                       </div>
                     </div>
 
                     {/* Continue Payment Button */}
                     {onContinuePayment && order.paymentStatus && order.paymentStatus !== PAYMENT_STATUS.PAID && order.paymentStatus !== PAYMENT_STATUS.NOT_REQUIRED && (
                       <div className="flex justify-end">
-                        <Button 
+                        <Button
                           onClick={() => onContinuePayment(order.orderId)}
                           disabled={continuingPayment[order.orderId]}
                           size="sm"
                           className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
                         >
                           <CreditCard className="h-4 w-4" />
-                          {continuingPayment[order.orderId] ? 'Processing...' : 
-                           order.paymentStatus === PAYMENT_STATUS.ADJUSTMENT_REQUIRED ? 'Continue with Updated Price' : 
+                          {continuingPayment[order.orderId] ? 'Processing...' :
+                           order.paymentStatus === PAYMENT_STATUS.ADJUSTMENT_REQUIRED ? 'Continue with Updated Price' :
                            'Continue Payment'}
                         </Button>
                       </div>
@@ -358,11 +345,11 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                       {/* Timeline container */}
                       <div className="relative h-6 bg-gray-100 rounded-md overflow-hidden">
                         {/* Production Bar */}
-                        <div 
+                        <div
                           className="absolute left-0 top-0 h-full bg-blue-500 transition-all duration-300"
                           style={{ width: `${calculation.productionWidth}%` }}
                         >
-                          <div 
+                          <div
                             className="h-full bg-blue-600 transition-all duration-500"
                             style={{ width: `${calculation.productionProgress * 100}%` }}
                           />
@@ -445,7 +432,7 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                         )}
 
                         {/* Date labels */}
-                        <div className="flex justify-between text-xs">
+                        <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-0 text-xs">
                           {(() => {
                             // Check if order has timeline data but hasn't started yet
                             const hasNotStarted = order.timelineData?.has_started === false ||
@@ -484,7 +471,7 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
 
                               return (
                                 <div className="w-full text-center space-y-2">
-                                  <div className="flex justify-center gap-4 text-muted-foreground">
+                                  <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 text-muted-foreground">
                                     <span>Production: <span className="font-medium">{productionText}</span></span>
                                     {shipping && (
                                       <span>Shipping: <span className="font-medium">{shippingText}</span></span>
@@ -544,9 +531,9 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
 
                               return (
                                 <>
-                                  <div className="text-left">
-                                    <div className="font-medium text-blue-700">Production Start</div>
-                                    <div className="text-muted-foreground">{formatDate(productionStart.toISOString())}</div>
+                                  <div className="text-left flex-1">
+                                    <div className="font-medium text-blue-700 text-xs sm:text-sm">Production Start</div>
+                                    <div className="text-muted-foreground text-xs break-words">{formatDate(productionStart.toISOString())}</div>
                                     {production.note && (
                                       <div className="text-xs text-amber-600 mt-0.5 italic">
                                         {production.note}
@@ -554,9 +541,9 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                                     )}
                                   </div>
                                   {shipping && (
-                                    <div className="text-center">
-                                      <div className="font-medium text-green-700">Shipping Start</div>
-                                      <div className="text-muted-foreground">
+                                    <div className="text-center flex-1">
+                                      <div className="font-medium text-green-700 text-xs sm:text-sm">Shipping Start</div>
+                                      <div className="text-muted-foreground text-xs break-words">
                                         {hasProdRange
                                           ? `${formatDate(productionEndMin.toISOString())} - ${formatDate(productionEndMax.toISOString())}`
                                           : formatDate(productionEndMin.toISOString())
@@ -569,9 +556,9 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                                       )}
                                     </div>
                                   )}
-                                  <div className="text-right">
-                                    <div className="font-medium text-foreground">Est. Delivery</div>
-                                    <div className="text-muted-foreground">
+                                  <div className="text-right flex-1">
+                                    <div className="font-medium text-foreground text-xs sm:text-sm">Est. Delivery</div>
+                                    <div className="text-muted-foreground text-xs break-words">
                                       {hasDeliveryRange
                                         ? `${formatDate(shippingEndMin.toISOString())} - ${formatDate(shippingEndMax.toISOString())}`
                                         : formatDate(shippingEndMin.toISOString())
@@ -604,14 +591,14 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
 
                               return (
                                 <>
-                                  <div className="text-left">
-                                    <div className="font-medium text-blue-700">Production Start</div>
-                                    <div className="text-muted-foreground">{formatDate(productionStart.toISOString())}</div>
+                                  <div className="text-left flex-1">
+                                    <div className="font-medium text-blue-700 text-xs sm:text-sm">Production Start</div>
+                                    <div className="text-muted-foreground text-xs break-words">{formatDate(productionStart.toISOString())}</div>
                                   </div>
                                   {hasShipping && (
-                                    <div className="text-center">
-                                      <div className="font-medium text-green-700">Shipping Start</div>
-                                      <div className="text-muted-foreground">
+                                    <div className="text-center flex-1">
+                                      <div className="font-medium text-green-700 text-xs sm:text-sm">Shipping Start</div>
+                                      <div className="text-muted-foreground text-xs break-words">
                                         {hasProductionRange
                                           ? `${formatDate(productionEndMin.toISOString())} - ${formatDate(productionEndMax.toISOString())}`
                                           : formatDate(productionEndMin.toISOString())
@@ -619,9 +606,9 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                                       </div>
                                     </div>
                                   )}
-                                  <div className="text-right">
-                                    <div className="font-medium text-foreground">Est. Delivery</div>
-                                    <div className="text-muted-foreground">
+                                  <div className="text-right flex-1">
+                                    <div className="font-medium text-foreground text-xs sm:text-sm">Est. Delivery</div>
+                                    <div className="text-muted-foreground text-xs break-words">
                                       {hasDeliveryRange
                                         ? `${formatDate(deliveryMin.toISOString())} - ${formatDate(deliveryMax.toISOString())}`
                                         : formatDate(deliveryMin.toISOString())
@@ -644,9 +631,9 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                             <MapPin className="w-3 h-3" />
                             <span>Tracking: {order.trackingNumber}</span>
                             {order.trackingUrl && (
-                              <a 
-                                href={order.trackingUrl} 
-                                target="_blank" 
+                              <a
+                                href={order.trackingUrl}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-blue-500 hover:underline flex items-center gap-1"
                                 onClick={(e) => e.stopPropagation()}
@@ -674,11 +661,11 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                     </div>
 
                     {/* Latest tracking update for shipped orders */}
-                    {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && order.trackingNumber && 
+                    {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && order.trackingNumber &&
                      !isExpanded && renderLatestTrackingUpdate(order)}
                   </div>
                 </CardContent>
-                
+
                 <CollapsibleContent>
                   <Separator />
                   <CardContent className="pt-4">
@@ -691,7 +678,7 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                           <TabsTrigger value="tracking">Tracking</TabsTrigger>
                         )}
                       </TabsList>
-                      
+
                       <TabsContent value="timeline" className="mt-4">
                         <div className="space-y-3">
                           <h4 className="font-medium">Production Timeline</h4>
@@ -721,10 +708,10 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                                             const attachmentUrl = update.attachmentUrls?.[attachment] || '#';
                                             const filename = attachment.split('/').pop() || attachment;
                                             return (
-                                              <a 
+                                              <a
                                                 key={i}
-                                                href={attachmentUrl} 
-                                                target="_blank" 
+                                                href={attachmentUrl}
+                                                target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-xs transition-colors"
                                                 title={attachment}
@@ -732,7 +719,7 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                                                 📎 {filename} <ExternalLink className="h-3 w-3" />
                                               </a>
                                             );
-                                          })}  
+                                          })}
                                         </div>
                                       </div>
                                     )}
@@ -746,7 +733,7 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                           )}
                         </div>
                       </TabsContent>
-                      
+
                       <TabsContent value="payment" className="mt-4">
                         <div className="space-y-3">
                           <h4 className="font-medium">Payment Information</h4>
@@ -754,14 +741,14 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                             <div>
                               <span className="text-muted-foreground">Total:</span>
                               <p className="font-medium">
-                                {order.orderType === 'VIDEO_SAMPLE' 
-                                  ? `${order.currency || '¥'}0` 
+                                {order.orderType === 'VIDEO_SAMPLE'
+                                  ? `${order.currency || '¥'}0`
                                   : (() => {
                                       const totalPrice = Number(order.totalPrice) || 0;
                                       const shippingCost = Number(order.shippingCost) || 0;
                                       const serviceCharge = Number(order.serviceCharge) || 0;
                                       const totalWithCosts = totalPrice + shippingCost + serviceCharge;
-                                      return totalWithCosts > 0 
+                                      return totalWithCosts > 0
                                         ? `${order.currency || '¥'}${totalWithCosts.toFixed(2)}`
                                         : `${order.currency || '¥'}${order.totalPrice || 'N/A'}`;
                                     })()
@@ -785,13 +772,13 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                             <div>
                               <span className="text-muted-foreground">Est. Shipping:</span>
                               <p>
-                                {order.orderType === 'VIDEO_SAMPLE' 
+                                {order.orderType === 'VIDEO_SAMPLE'
                                   ? '0 days'
-                                  : order.estimatedShippingDaysMin && order.estimatedShippingDaysMax 
+                                  : order.estimatedShippingDaysMin && order.estimatedShippingDaysMax
                                     ? `${order.estimatedShippingDaysMin}-${order.estimatedShippingDaysMax} days`
-                                    : order.estimatedShippingDaysMin 
+                                    : order.estimatedShippingDaysMin
                                       ? `${order.estimatedShippingDaysMin}+ days`
-                                      : order.estimatedShippingDaysMax 
+                                      : order.estimatedShippingDaysMax
                                         ? `up to ${order.estimatedShippingDaysMax} days`
                                         : 'N/A'
                                 }
@@ -800,7 +787,7 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
                           </div>
                         </div>
                       </TabsContent>
-                      
+
                       {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && (
                         <TabsContent value="tracking" className="mt-4">
                           {order.trackingNumber ? renderTrackingInfo(order) : (
