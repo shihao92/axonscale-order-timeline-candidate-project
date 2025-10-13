@@ -23,6 +23,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import TimelineView from '@/components/order/TimelineView';
 import { PriceChangeModal } from '@/components/order/PriceChangeModal';
 import { PriceChanges } from '@/lib/api/orderClient';
+import OrderCard from '@/components/order/OrderCard';
 
 export default function BuyerOrderList() {
   const { user } = useAuth();
@@ -454,263 +455,7 @@ export default function BuyerOrderList() {
     );
   };
 
-  const renderOrderSummaryCard = (order: Order) => {
-    const isExpanded = expandedOrderId === order.orderId;
-
-    return (
-      <Collapsible
-        key={order.orderId}
-        open={isExpanded}
-        onOpenChange={() => setExpandedOrderId(isExpanded ? null : order.orderId)}
-        className="w-full"
-      >
-  <Card className="overflow-hidden card-elevated soft-transition group">
-          <CardHeader className="p-3 sm:p-4 md:p-6 pb-3">
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
-              <div className="flex items-start gap-3 flex-1 min-w-0 w-full sm:w-auto">
-                {/* Product Thumbnail */}
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {(() => {
-                    const thumbnail = getProductThumbnail(order);
-                    return thumbnail?.s3_url ? (
-                      <PresignedImage
-                        s3Url={thumbnail.s3_url}
-                        alt={thumbnail.filename || thumbnail.description || "Product"}
-                        className="w-full h-full object-cover hover-zoom"
-                      />
-                    ) : (
-                      <Package className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
-                    );
-                  })()}
-                </div>
-
-                {/* Order Details */}
-                <div className="space-y-1 min-w-0 flex-1">
-                  <CardTitle className="text-base sm:text-lg md:text-xl font-bold text-foreground leading-tight">
-                    {limitWords(order.productSpec?.productName || 'Product', 5)}
-                  </CardTitle>
-                  <div className="text-xs sm:text-sm text-muted-foreground">
-                    Supplier: {order.supplierId}
-                  </div>
-                  <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                    <span>Order #{order.orderId.slice(0, 8)}</span>
-                    <span>•</span>
-                    <span>Quote #{order.quoteId.slice(0, 8)}</span>
-                    <span>•</span>
-                    <span>Created {formatDate(order.createdAt)}</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5 sm:hidden text-xs text-muted-foreground">
-                    <span>• Order #{order.orderId.slice(0, 8)}</span>
-                    <span>• Quote #{order.quoteId.slice(0, 8)}</span>
-                    <span>• Created {formatDate(order.createdAt)}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5 sm:gap-2 w-full sm:w-auto">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground font-medium">Production:</span>
-                  <Badge variant={
-                    order.status === ORDER_STATUS.PRODUCTION_COMPLETED ? "success" : "default"
-                  }>
-                    {order.status.replace(/_/g, ' ')}
-                  </Badge>
-                </div>
-                {order.paymentStatus && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground font-medium">Payment:</span>
-                    <Badge variant={
-                      order.paymentStatus === PAYMENT_STATUS.PAID ? "success" :
-                      order.paymentStatus === PAYMENT_STATUS.PENDING ? "secondary" :
-                      order.paymentStatus === PAYMENT_STATUS.FAILED ? "destructive" :
-                      order.paymentStatus === PAYMENT_STATUS.ADJUSTMENT_REQUIRED ? "secondary" : "outline"
-                    } className="text-xs">
-                      {order.paymentStatus === PAYMENT_STATUS.PAID ? 'Paid' :
-                       order.paymentStatus === PAYMENT_STATUS.PENDING ? 'Pending' :
-                       order.paymentStatus === PAYMENT_STATUS.FAILED ? 'Failed' :
-                       order.paymentStatus === PAYMENT_STATUS.ADJUSTMENT_REQUIRED ? 'Price Changed' :
-                       order.paymentStatus.replace(/_/g, ' ')}
-                    </Badge>
-                  </div>
-                )}
-                {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && order.shipmentStatus && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground font-medium">Shipment:</span>
-                    <Badge variant={
-                      order.shipmentStatus === SHIPMENT_STATUS.DELIVERED ? "success" : "secondary"
-                    } className="text-xs">
-                      {order.shipmentStatus.replace(/_/g, ' ')}
-                    </Badge>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="pt-0 p-3 sm:p-4 md:p-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-              <div className="space-y-2 flex-1">
-                {/* Status-specific info */}
-                {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && order.trackingNumber && (
-                  <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-                    <Package className="h-4 w-4 text-primary flex-shrink-0" />
-                    <span className="break-all">Tracking: {order.trackingNumber}</span>
-                    {order.trackingUrl && (
-                      <a
-                        href={order.trackingUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline flex items-center gap-1 flex-shrink-0"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-                  </div>
-                )}
-
-                {/* Latest tracking update for shipped orders */}
-                {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && order.trackingNumber &&
-                 !isExpanded && renderLatestTrackingUpdate(order)}
-              </div>
-
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="px-2 py-1 h-auto self-start sm:self-center">
-                  <span className="text-xs text-primary sm:hover:underline flex items-center gap-1 whitespace-nowrap">
-                    {isExpanded ? (
-                      <>Hide Details <ChevronUp className="h-3 w-3" /></>
-                    ) : (
-                      <>View Details <ChevronDown className="h-3 w-3" /></>
-                    )}
-                  </span>
-                </Button>
-              </CollapsibleTrigger>
-            </div>
-          </CardContent>
-
-          <CollapsibleContent>
-            <Separator />
-            <CardContent className="pt-4">
-              {/* Render detailed content based on order status */}
-              <Tabs defaultValue="timeline" className="w-full">
-                <TabsList className={`grid w-full h-auto ${order.status === ORDER_STATUS.PRODUCTION_COMPLETED ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                  <TabsTrigger value="timeline" className="text-wrap">Production Timeline</TabsTrigger>
-                  <TabsTrigger value="payment" className="text-wrap">Payment Status</TabsTrigger>
-                  {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && (
-                    <TabsTrigger value="tracking">Tracking</TabsTrigger>
-                  )}
-                </TabsList>
-
-                <TabsContent value="timeline" className="mt-4">
-                  <div className="space-y-3">
-                    <h4 className="font-medium">Production Timeline</h4>
-                    {order.updates && order.updates.length > 0 ? (
-                      <div className="space-y-3">
-                        {order.updates
-                          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                          .map((update, index) => (
-                            <div key={index} className="border-l-2 border-gray-200 pl-4 pb-3 relative">
-                              <div className="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-0"></div>
-                              <div className="flex items-baseline justify-between">
-                                <span className="text-xs font-medium text-muted-foreground">
-                                  {formatDate(update.timestamp)}
-                                </span>
-                                <Badge variant="outline" className="text-xs">
-                                  {update.type.replace(/_/g, ' ')}
-                                </Badge>
-                              </div>
-                              <p className="text-sm mt-1">
-                                {update.description || (update.status ? update.status.replace(/_/g, ' ') : 'Status update')}
-                              </p>
-                              {update.attachments && update.attachments.length > 0 && (
-                                <div className="mt-2">
-                                  <p className="text-xs text-muted-foreground mb-1">Attachments:</p>
-                                  <div className="flex flex-wrap gap-2">
-                                    {update.attachments.map((attachment, i) => {
-                                      const attachmentUrl = update.attachmentUrls?.[attachment] || '#';
-                                      // Extract filename from full path (get everything after the last '/')
-                                      const filename = attachment.split('/').pop() || attachment;
-                                      return (
-                                        <a
-                                          key={i}
-                                          href={attachmentUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-xs transition-colors"
-                                          title={attachment} // Show full path on hover
-                                        >
-                                          📎 {filename} <ExternalLink className="h-3 w-3" />
-                                        </a>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-4 text-muted-foreground">
-                        No production updates yet
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="payment" className="mt-4">
-                  <div className="space-y-3">
-                    <h4 className="font-medium">Payment Information</h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Total:</span>
-                        <p className="font-medium">{order.currency || '¥'}{order.totalPrice || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Status:</span>
-                        <p>{order.paymentStatus || 'Paid'}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Order Date:</span>
-                        <p>{formatDate(order.createdAt)}</p>
-                      </div>
-                      {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && (
-                        <div>
-                          <span className="text-muted-foreground">Completed:</span>
-                          <p>{formatDate(order.updatedAt)}</p>
-                        </div>
-                      )}
-                      {(order.estimatedShippingDaysMin || order.estimatedShippingDaysMax) && (
-                        <div>
-                          <span className="text-muted-foreground">Est. Shipping:</span>
-                          <p>
-                            {order.estimatedShippingDaysMin && order.estimatedShippingDaysMax
-                              ? `${order.estimatedShippingDaysMin}-${order.estimatedShippingDaysMax} days`
-                              : order.estimatedShippingDaysMin
-                                ? `${order.estimatedShippingDaysMin}+ days`
-                                : `up to ${order.estimatedShippingDaysMax} days`
-                            }
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </TabsContent>
-
-                {order.status === ORDER_STATUS.PRODUCTION_COMPLETED && (
-                  <TabsContent value="tracking" className="mt-4">
-                    {order.trackingNumber ? renderTrackingInfo(order) : (
-                      <div className="text-center py-4 text-muted-foreground">
-                        Tracking information will be available once shipped
-                      </div>
-                    )}
-                  </TabsContent>
-                )}
-              </Tabs>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
-    );
-  };
+  // renderOrderSummaryCard removed; OrderCard component is used instead
 
   return (
     <Tabs defaultValue="active" className="w-full">
@@ -756,19 +501,39 @@ export default function BuyerOrderList() {
               itemSize={170}
               width={'100%'}
             >
-              {(props: { index: number; style: React.CSSProperties }) => {
-                const { index, style } = props;
-                return (
-                  <div style={style} key={activeOrders[index].orderId}>
-                    {renderOrderSummaryCard(activeOrders[index])}
-                  </div>
-                );
-              }}
+                {(props: { index: number; style: React.CSSProperties }) => {
+                  const { index, style } = props;
+                  const order = activeOrders[index];
+                  return (
+                    <div style={style} key={order.orderId}>
+                      <OrderCard
+                        order={order}
+                        isExpanded={expandedOrderId === order.orderId}
+                        onToggleExpand={(id) => setExpandedOrderId(expandedOrderId === id ? null : id)}
+                        renderLatestTrackingUpdate={renderLatestTrackingUpdate}
+                        renderTrackingInfo={renderTrackingInfo}
+                        onContinuePayment={handleContinuePayment}
+                        continuingPayment={continuingPayment}
+                      />
+                    </div>
+                  );
+                }}
             </FixedSizeList>
           ) : (
             <div className="grid gap-4">
               {activeOrders.length > 0 ? (
-                activeOrders.map(order => renderOrderSummaryCard(order))
+                activeOrders.map(order => (
+                  <OrderCard
+                    key={order.orderId}
+                    order={order}
+                    isExpanded={expandedOrderId === order.orderId}
+                    onToggleExpand={(id) => setExpandedOrderId(expandedOrderId === id ? null : id)}
+                    renderLatestTrackingUpdate={renderLatestTrackingUpdate}
+                    renderTrackingInfo={renderTrackingInfo}
+                    onContinuePayment={handleContinuePayment}
+                    continuingPayment={continuingPayment}
+                  />
+                ))
               ) : (
                 <p className="text-center text-muted-foreground py-8">
                   No active orders found
@@ -799,9 +564,18 @@ export default function BuyerOrderList() {
             >
               {(props: { index: number; style: React.CSSProperties }) => {
                 const { index, style } = props;
+                const order = shippingOrders[index];
                 return (
-                  <div style={style} key={shippingOrders[index].orderId}>
-                    {renderOrderSummaryCard(shippingOrders[index])}
+                  <div style={style} key={order.orderId}>
+                    <OrderCard
+                      order={order}
+                      isExpanded={expandedOrderId === order.orderId}
+                      onToggleExpand={(id) => setExpandedOrderId(expandedOrderId === id ? null : id)}
+                      renderLatestTrackingUpdate={renderLatestTrackingUpdate}
+                      renderTrackingInfo={renderTrackingInfo}
+                      onContinuePayment={handleContinuePayment}
+                      continuingPayment={continuingPayment}
+                    />
                   </div>
                 );
               }}
@@ -809,7 +583,18 @@ export default function BuyerOrderList() {
           ) : (
             <div className="grid gap-4">
               {shippingOrders.length > 0 ? (
-                shippingOrders.map(order => renderOrderSummaryCard(order))
+                shippingOrders.map(order => (
+                  <OrderCard
+                    key={order.orderId}
+                    order={order}
+                    isExpanded={expandedOrderId === order.orderId}
+                    onToggleExpand={(id) => setExpandedOrderId(expandedOrderId === id ? null : id)}
+                    renderLatestTrackingUpdate={renderLatestTrackingUpdate}
+                    renderTrackingInfo={renderTrackingInfo}
+                    onContinuePayment={handleContinuePayment}
+                    continuingPayment={continuingPayment}
+                  />
+                ))
               ) : (
                 <p className="text-center text-muted-foreground py-8">
                   No orders in shipping or delivery
@@ -840,9 +625,18 @@ export default function BuyerOrderList() {
             >
               {(props: { index: number; style: React.CSSProperties }) => {
                 const { index, style } = props;
+                const order = completedOrders[index];
                 return (
-                  <div style={style} key={completedOrders[index].orderId}>
-                    {renderOrderSummaryCard(completedOrders[index])}
+                  <div style={style} key={order.orderId}>
+                    <OrderCard
+                      order={order}
+                      isExpanded={expandedOrderId === order.orderId}
+                      onToggleExpand={(id) => setExpandedOrderId(expandedOrderId === id ? null : id)}
+                      renderLatestTrackingUpdate={renderLatestTrackingUpdate}
+                      renderTrackingInfo={renderTrackingInfo}
+                      onContinuePayment={handleContinuePayment}
+                      continuingPayment={continuingPayment}
+                    />
                   </div>
                 );
               }}
@@ -850,8 +644,19 @@ export default function BuyerOrderList() {
           ) : (
             <div className="grid gap-4">
               {completedOrders.length > 0 ? (
-                completedOrders.map(order => renderOrderSummaryCard(order))
-              ) : (
+                  completedOrders.map(order => (
+                    <OrderCard
+                      key={order.orderId}
+                      order={order}
+                      isExpanded={expandedOrderId === order.orderId}
+                      onToggleExpand={(id) => setExpandedOrderId(expandedOrderId === id ? null : id)}
+                      renderLatestTrackingUpdate={renderLatestTrackingUpdate}
+                      renderTrackingInfo={renderTrackingInfo}
+                      onContinuePayment={handleContinuePayment}
+                      continuingPayment={continuingPayment}
+                    />
+                  ))
+                ) : (
                 <p className="text-center text-muted-foreground py-8">
                   No completed orders found
                 </p>

@@ -5,6 +5,8 @@
   "description": "Standalone Order Timeline View for Frontend Candidate Assessment",
   "scripts": {
     "dev": "next dev",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -40,6 +42,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/user-event": "^14.4.3",
+    "jsdom": "^22.1.0",
+    "vitest": "^0.34.2",
     "autoprefixer": "^10.4.20",
     "eslint": "^9",
     "eslint-config-next": "15.1.4",
