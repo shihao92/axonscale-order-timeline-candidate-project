@@ -221,7 +221,7 @@ function TimelineViewComponent({ orders, onOrderClick, trackingDetails = {}, loa
               className="w-full"
             >
               <Card
-                className={`overflow-hidden transition-all duration-200 hover:shadow-md ${
+                  className={`overflow-hidden card-elevated soft-transition ${
                   calculation.isOverdue && calculation.currentPhase !== 'completed' && order.shipmentStatus !== 'DELIVERED' ? 'border-red-200 bg-red-50/30' : ''
                 }`}
               >
@@ -236,7 +236,7 @@ function TimelineViewComponent({ orders, onOrderClick, trackingDetails = {}, loa
                             <PresignedImage
                               s3Url={thumbnail.s3_url}
                               alt={thumbnail.filename || "Product"}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover hover-zoom"
                             />
                           ) : (
                             <Package className="h-5 w-5 text-gray-400" />

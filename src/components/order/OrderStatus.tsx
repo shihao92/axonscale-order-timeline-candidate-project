@@ -31,7 +31,7 @@ export default function OrderStatus({ segments }: { segments: Segment[] }) {
               title={`${humanize(seg.key)}: ${seg.count} (${seg.pct}%)`}
               aria-label={`${humanize(seg.key)} ${seg.count}`}
               style={{ width: `${seg.pct}%`, background: seg.color }}
-              className="h-full flex items-center justify-center text-[11px] font-semibold text-white"
+              className="h-full flex items-center justify-center text-[11px] font-semibold text-white soft-transition transition-width"
             >
               {seg.pct >= 10 ? `${seg.pct}%` : ''}
             </div>
@@ -40,9 +40,9 @@ export default function OrderStatus({ segments }: { segments: Segment[] }) {
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-        {segments.map((seg) => (
-          <div key={seg.key} className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-sm" style={{ background: seg.color }} />
+        {segments.map((seg, idx) => (
+          <div key={seg.key} className="flex items-center gap-2" style={{ animationDelay: `${idx * 30}ms` }}>
+            <span className="w-3 h-3 rounded-sm soft-transition" style={{ background: seg.color }} />
             <div className="flex-1">
               <div className="font-medium truncate">{humanize(seg.key)}</div>
               <div className="text-muted-foreground text-[12px]">{seg.count} orders • {seg.pct}%</div>

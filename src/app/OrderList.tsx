@@ -464,7 +464,7 @@ export default function BuyerOrderList() {
         onOpenChange={() => setExpandedOrderId(isExpanded ? null : order.orderId)}
         className="w-full"
       >
-        <Card className="overflow-hidden">
+  <Card className="overflow-hidden card-elevated soft-transition group">
           <CardHeader className="p-3 sm:p-4 md:p-6 pb-3">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
               <div className="flex items-start gap-3 flex-1 min-w-0 w-full sm:w-auto">
@@ -476,7 +476,7 @@ export default function BuyerOrderList() {
                       <PresignedImage
                         s3Url={thumbnail.s3_url}
                         alt={thumbnail.filename || thumbnail.description || "Product"}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover hover-zoom"
                       />
                     ) : (
                       <Package className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />

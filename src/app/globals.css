@@ -66,3 +66,54 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Card elevation and hover lift */
+  .card-elevated {
+    box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 6px 24px rgba(16,24,40,0.08);
+    transition: transform 180ms cubic-bezier(.2,.9,.2,1), box-shadow 180ms ease;
+  }
+  .card-elevated:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 30px rgba(2,6,23,0.12);
+  }
+
+  .soft-transition {
+    transition: all 160ms cubic-bezier(.22,.9,.36,1);
+  }
+
+  /* transition for width changes specifically (stacked bar) */
+  .transition-width {
+    transition: width 420ms cubic-bezier(.2,.9,.2,1);
+  }
+
+  /* entrance animation */
+  @keyframes slideUpFade {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .enter-from-bottom {
+    animation: slideUpFade 360ms cubic-bezier(.2,.9,.2,1) both;
+  }
+
+  /* hover zoom for thumbnails */
+  .hover-zoom {
+    transition: transform 220ms cubic-bezier(.22,.9,.36,1);
+    transform-origin: center center;
+  }
+  .hover-zoom:hover {
+    transform: scale(1.06);
+  }
+
+  /* subtle shimmer for loading */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .shimmer {
+    background: linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.02) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1200ms linear infinite;
+  }
+}

@@ -90,9 +90,15 @@ export default function OrderDashboard({ orders }: OrderDashboardProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-      <OrderStatus segments={segments} />
-      <DaysRemainingHistogram buckets={stats.daysBuckets} />
-      <OrdersSparkline points={sparkData} />
+      <div className="enter-from-bottom">
+        <OrderStatus segments={segments} />
+      </div>
+      <div className="enter-from-bottom" style={{ animationDelay: '80ms' }}>
+        <DaysRemainingHistogram buckets={stats.daysBuckets} />
+      </div>
+      <div className="enter-from-bottom" style={{ animationDelay: '120ms' }}>
+        <OrdersSparkline points={sparkData} />
+      </div>
     </div>
   );
 }
