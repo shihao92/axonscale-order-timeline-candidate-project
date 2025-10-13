@@ -19,7 +19,6 @@ export default class ErrorBoundary extends React.Component<React.PropsWithChildr
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // TODO: send error to telemetry / logging service
     console.error('Unhandled error caught by ErrorBoundary:', error, info);
   }
 
@@ -38,7 +37,6 @@ export default class ErrorBoundary extends React.Component<React.PropsWithChildr
             <div className="flex gap-3">
               <Button onClick={this.handleReload}>Reload</Button>
               <Button variant="outline" onClick={() => {
-                // copy error message to clipboard for easier bug reports
                 try {
                   const msg = this.state.error ? `${this.state.error.name}: ${this.state.error.message}\n\n${this.state.error.stack}` : 'No error details';
                   navigator.clipboard?.writeText(msg);

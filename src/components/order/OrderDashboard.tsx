@@ -34,7 +34,6 @@ export default function OrderDashboard({ orders }: OrderDashboardProps) {
       // compute days remaining using timelineData or estimatedShippingDays
       let daysRemaining = 0;
       if (o.timelineData && o.timelineData.production && o.timelineData.shipping) {
-        // naive estimation: use total_duration_days relative to createdAt
         const created = new Date(o.createdAt);
         const totalDays = o.timelineData.total_duration_days || 0;
         const elapsed = Math.floor((today.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
@@ -42,13 +41,12 @@ export default function OrderDashboard({ orders }: OrderDashboardProps) {
       } else if (o.estimatedShippingDaysMax) {
         daysRemaining = o.estimatedShippingDaysMax;
       } else {
-        daysRemaining = 7; // fallback
+        daysRemaining = 7;
       }
 
       const bucket = bucketDays(daysRemaining);
       daysBuckets[bucket] = (daysBuckets[bucket] || 0) + 1;
 
-      // orders-over-time: use createdAt date key
       const d = new Date(o.createdAt).toISOString().slice(0, 10);
       timelineCountsByDate[d] = (timelineCountsByDate[d] || 0) + 1;
     });
@@ -59,8 +57,8 @@ export default function OrderDashboard({ orders }: OrderDashboardProps) {
   const statusKeys = Object.keys(stats.statusCounts);
   const total = orders.length || 1;
   const colorMap: Record<string, string> = {
-    PRODUCTION_COMPLETED: '#10B981', // green
-    PRODUCTION: '#0EA5E9', // sky
+    PRODUCTION_COMPLETED: '#10B981',
+    PRODUCTION: '#0EA5E9',
     PRODUCTION_PLANNING: '#60A5FA',
     INITIAL_PROCESSING: '#7C3AED',
     QUALITY_ASSURANCE: '#F59E0B',
