@@ -22,7 +22,7 @@ interface TimelineViewProps {
   continuingPayment?: Record<string, boolean>;
 }
 
-export default function TimelineView({ orders, onOrderClick, trackingDetails = {}, loadingTracking = {}, onContinuePayment, continuingPayment = {} }: TimelineViewProps) {
+function TimelineViewComponent({ orders, onOrderClick, trackingDetails = {}, loadingTracking = {}, onContinuePayment, continuingPayment = {} }: TimelineViewProps) {
   const timelineCalculations = useTimelineCalculation(orders);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
@@ -808,3 +808,4 @@ export default function TimelineView({ orders, onOrderClick, trackingDetails = {
     </div>
   );
 }
+export default React.memo(TimelineViewComponent);

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderSortSelect } from '@/components/order/OrderSortSelect';
+import { Input } from '@/components/ui/input';
 import { useOrderSort } from '@/components/order/useOrderSort';
 import { ORDER_STATUS, SHIPMENT_STATUS, PAYMENT_STATUS } from '@/types/order';
 import { orderApi } from '@/lib/api/orderClient';
@@ -14,6 +15,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Package, ExternalLink, ChevronDown, ChevronUp, MapPin, AlertCircle, CreditCard } from 'lucide-react';
 import { PresignedImage } from '@/components/quote/PresignedImage';
 import { Button } from '@/components/ui/button';
+import { FixedSizeList } from 'react-window';
+// using inline props type for react-window child renderer
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import TimelineView from '@/components/order/TimelineView';
@@ -29,6 +32,36 @@ export default function BuyerOrderList() {
   const [loadingTracking, setLoadingTracking] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('timeline');
   const { sortedOrders, sortOption, setSortOption } = useOrderSort(orders);
+  // Search state (debounced)
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [debouncedQuery, setDebouncedQuery] = useState<string>('');
+
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 300);
+    return () => clearTimeout(handle);
+  }, [searchQuery]);
+
+  const filteredSortedOrders = useMemo(() => {
+    if (!debouncedQuery) return sortedOrders;
+    const q = debouncedQuery.toLowerCase();
+    return sortedOrders.filter((order) => {
+      const productName = (
+        order.productSpec?.product_specifications?.product_name ||
+        order.productSpec?.productName ||
+        ''
+      ).toString().toLowerCase();
+      const orderId = (order.orderId || '').toLowerCase();
+      const quoteId = (order.quoteId || '').toLowerCase();
+      const supplierId = (order.supplierId || '').toLowerCase();
+
+      return (
+        productName.includes(q) ||
+        orderId.includes(q) ||
+        quoteId.includes(q) ||
+        supplierId.includes(q)
+      );
+    });
+  }, [sortedOrders, debouncedQuery]);
 
   // Continue payment modal state
   const [priceChangeModal, setPriceChangeModal] = useState<{
@@ -296,12 +329,12 @@ export default function BuyerOrderList() {
     );
   }
 
-  const activeOrders = sortedOrders.filter(order => order.status !== ORDER_STATUS.PRODUCTION_COMPLETED);
-  const shippingOrders = sortedOrders.filter(order =>
+  const activeOrders = filteredSortedOrders.filter(order => order.status !== ORDER_STATUS.PRODUCTION_COMPLETED);
+  const shippingOrders = filteredSortedOrders.filter(order =>
     order.status === ORDER_STATUS.PRODUCTION_COMPLETED &&
     (!order.shipmentStatus || order.shipmentStatus !== SHIPMENT_STATUS.DELIVERED)
   );
-  const completedOrders = sortedOrders.filter(order => order.status === ORDER_STATUS.PRODUCTION_COMPLETED && order.shipmentStatus === SHIPMENT_STATUS.DELIVERED);
+  const completedOrders = filteredSortedOrders.filter(order => order.status === ORDER_STATUS.PRODUCTION_COMPLETED && order.shipmentStatus === SHIPMENT_STATUS.DELIVERED);
 
   // Helper function to render the latest tracking update only (for direct display in the card)
   const renderLatestTrackingUpdate = (order: Order) => {
@@ -687,8 +720,17 @@ export default function BuyerOrderList() {
           <TabsTrigger value="completed" className="text-wrap">Completed Orders</TabsTrigger>
         </TabsList>
 
-        <div className="flex items-center gap-3 self-end">
-          <OrderSortSelect value={sortOption} onChange={setSortOption} />
+        <div className="flex items-center gap-3 self-end w-full sm:w-auto">
+          <div className="w-full max-w-md">
+            <Input
+              placeholder="Search orders, product name, supplier..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="hidden sm:block">
+            <OrderSortSelect value={sortOption} onChange={setSortOption} />
+          </div>
         </div>
       </div>
 
@@ -703,15 +745,33 @@ export default function BuyerOrderList() {
             continuingPayment={continuingPayment}
           />
         ) : (
-          <div className="grid gap-4">
-            {activeOrders.length > 0 ? (
-              activeOrders.map(order => renderOrderSummaryCard(order))
-            ) : (
-              <p className="text-center text-muted-foreground py-8">
-                No active orders found
-              </p>
-            )}
-          </div>
+          (activeOrders.length > 20) ? (
+            <FixedSizeList
+              height={600}
+              itemCount={activeOrders.length}
+              itemSize={170}
+              width={'100%'}
+            >
+              {(props: { index: number; style: React.CSSProperties }) => {
+                const { index, style } = props;
+                return (
+                  <div style={style} key={activeOrders[index].orderId}>
+                    {renderOrderSummaryCard(activeOrders[index])}
+                  </div>
+                );
+              }}
+            </FixedSizeList>
+          ) : (
+            <div className="grid gap-4">
+              {activeOrders.length > 0 ? (
+                activeOrders.map(order => renderOrderSummaryCard(order))
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  No active orders found
+                </p>
+              )}
+            </div>
+          )
         )}
       </TabsContent>
 
@@ -726,15 +786,33 @@ export default function BuyerOrderList() {
             continuingPayment={continuingPayment}
           />
         ) : (
-          <div className="grid gap-4">
-            {shippingOrders.length > 0 ? (
-              shippingOrders.map(order => renderOrderSummaryCard(order))
-            ) : (
-              <p className="text-center text-muted-foreground py-8">
-                No orders in shipping or delivery
-              </p>
-            )}
-          </div>
+          (shippingOrders.length > 20) ? (
+            <FixedSizeList
+              height={600}
+              itemCount={shippingOrders.length}
+              itemSize={170}
+              width={'100%'}
+            >
+              {(props: { index: number; style: React.CSSProperties }) => {
+                const { index, style } = props;
+                return (
+                  <div style={style} key={shippingOrders[index].orderId}>
+                    {renderOrderSummaryCard(shippingOrders[index])}
+                  </div>
+                );
+              }}
+            </FixedSizeList>
+          ) : (
+            <div className="grid gap-4">
+              {shippingOrders.length > 0 ? (
+                shippingOrders.map(order => renderOrderSummaryCard(order))
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  No orders in shipping or delivery
+                </p>
+              )}
+            </div>
+          )
         )}
       </TabsContent>
 
@@ -749,15 +827,33 @@ export default function BuyerOrderList() {
             continuingPayment={continuingPayment}
           />
         ) : (
-          <div className="grid gap-4">
-            {completedOrders.length > 0 ? (
-              completedOrders.map(order => renderOrderSummaryCard(order))
-            ) : (
-              <p className="text-center text-muted-foreground py-8">
-                No completed orders found
-              </p>
-            )}
-          </div>
+          (completedOrders.length > 20) ? (
+            <FixedSizeList
+              height={600}
+              itemCount={completedOrders.length}
+              itemSize={170}
+              width={'100%'}
+            >
+              {(props: { index: number; style: React.CSSProperties }) => {
+                const { index, style } = props;
+                return (
+                  <div style={style} key={completedOrders[index].orderId}>
+                    {renderOrderSummaryCard(completedOrders[index])}
+                  </div>
+                );
+              }}
+            </FixedSizeList>
+          ) : (
+            <div className="grid gap-4">
+              {completedOrders.length > 0 ? (
+                completedOrders.map(order => renderOrderSummaryCard(order))
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  No completed orders found
+                </p>
+              )}
+            </div>
+          )
         )}
       </TabsContent>
 
