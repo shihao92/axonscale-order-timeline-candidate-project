@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderSortSelect } from '@/components/order/OrderSortSelect';
 import { Input } from '@/components/ui/input';
+import OrderDashboard from '@/components/order/OrderDashboard';
 import { useOrderSort } from '@/components/order/useOrderSort';
 import { ORDER_STATUS, SHIPMENT_STATUS, PAYMENT_STATUS } from '@/types/order';
 import { orderApi } from '@/lib/api/orderClient';
@@ -713,7 +714,7 @@ export default function BuyerOrderList() {
 
   return (
     <Tabs defaultValue="active" className="w-full">
-      <div className="flex flex-col gap-2 sm:flex-row sm:justify-between items-center mb-4">
+  <div className="flex flex-col gap-2 sm:flex-row sm:justify-between items-center mb-4">
         <TabsList className="h-auto">
           <TabsTrigger value="active" className="text-wrap">Active Orders</TabsTrigger>
           <TabsTrigger value="shipping" className="text-wrap">Shipping Orders</TabsTrigger>
@@ -733,6 +734,9 @@ export default function BuyerOrderList() {
           </div>
         </div>
       </div>
+
+  {/* Dashboard visualizations */}
+  <OrderDashboard orders={filteredSortedOrders} />
 
       <TabsContent value="active">
         {viewMode === 'timeline' ? (
