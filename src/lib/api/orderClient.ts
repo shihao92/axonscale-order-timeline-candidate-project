@@ -63,6 +63,12 @@ export interface PriceChange {
 
 class OrderClient {
   private baseUrl: string;
+  // Simple in-memory caches
+  private ordersCache: Map<string, { data: OrderResponse; expires: number }> = new Map();
+  private trackingCache: Map<string, { data: TrackingInfoResponse; expires: number }> = new Map();
+
+  // Default cache TTL in ms
+  private defaultTtl = 60 * 1000; // 60 seconds
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
@@ -107,19 +113,31 @@ class OrderClient {
   }
 
   async getOrdersByBuyer(buyerId: string, token?: string): Promise<OrderResponse> {
+    const cacheKey = `orders:${buyerId}`;
+    const now = Date.now();
+    const cached = this.ordersCache.get(cacheKey);
+    if (cached && cached.expires > now) {
+      return cached.data;
+    }
+
     // Use mock data if enabled
     if (USE_MOCK_DATA) {
       console.log('📦 Using mock data for orders');
+      const data: OrderResponse = { orders: MOCK_ORDERS };
+      this.ordersCache.set(cacheKey, { data, expires: now + this.defaultTtl });
       return new Promise((resolve) => {
         setTimeout(() => {
-          resolve({ orders: MOCK_ORDERS });
+          resolve(data);
         }, 500); // Simulate network delay
       });
     }
 
-    return this.handleRequest<OrderResponse>('', {
+    const data = await this.handleRequest<OrderResponse>('', {
       method: 'GET',
     }, { buyerId }, token);
+
+    this.ordersCache.set(cacheKey, { data, expires: now + this.defaultTtl });
+    return data;
   }
 
   async getTrackingInfo(
@@ -127,25 +145,30 @@ class OrderClient {
     supplierId: string,
     token?: string
   ): Promise<TrackingInfoResponse> {
+    const cacheKey = `tracking:${orderId}:${supplierId}`;
+    const now = Date.now();
+    const cached = this.trackingCache.get(cacheKey);
+    if (cached && cached.expires > now) {
+      return cached.data;
+    }
+
     // Use mock data if enabled
     if (USE_MOCK_DATA) {
       const order = MOCK_ORDERS.find(o => o.orderId === orderId);
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            orderId,
-            supplierId,
-            trackingNumber: order?.trackingNumber,
-            carrier: order?.carrier,
-            trackingUrl: order?.trackingUrl,
-            trackingDetails: order?.trackingDetails,
-            hasTracking: !!order?.trackingNumber
-          });
-        }, 300);
-      });
+      const response: TrackingInfoResponse = {
+        orderId,
+        supplierId,
+        trackingNumber: order?.trackingNumber,
+        carrier: order?.carrier,
+        trackingUrl: order?.trackingUrl,
+        trackingDetails: order?.trackingDetails,
+        hasTracking: !!order?.trackingNumber
+      };
+      this.trackingCache.set(cacheKey, { data: response, expires: now + this.defaultTtl });
+      return new Promise((resolve) => setTimeout(() => resolve(response), 300));
     }
 
-    return await this.handleRequest<TrackingInfoResponse>(
+    const data = await this.handleRequest<TrackingInfoResponse>(
       `/${orderId}/tracking`,
       {
         method: 'GET',
@@ -154,6 +177,9 @@ class OrderClient {
       token,
       true
     );
+
+    this.trackingCache.set(cacheKey, { data, expires: now + this.defaultTtl });
+    return data;
   }
 
   async continuePayment(
