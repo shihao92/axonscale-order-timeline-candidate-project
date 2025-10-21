@@ -26,24 +26,48 @@ const STATUS_COLOR: Record<string, string> = {
 function getOrderDays(order: Order) {
   // prefer timelineData phases (production + shipping) if present
   const days: string[] = [];
-  const addRange = (startStr?: string, endStr?: string) => {
-    if (!startStr) return;
-    const start = new Date(startStr);
-    const end = endStr ? new Date(endStr) : start;
+  const addRangeDates = (start: Date, end: Date) => {
     let cur = new Date(start);
-    while (cur <= end) {
-      days.push(cur.toISOString().slice(0,10));
+    // normalize to start of day
+    cur.setHours(0,0,0,0);
+    const last = new Date(end);
+    last.setHours(0,0,0,0);
+    while (cur <= last) {
+      days.push(format(cur, 'yyyy-MM-dd'));
       cur.setDate(cur.getDate() + 1);
     }
   };
 
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
   if (order.timelineData) {
-    const prod = order.timelineData.production;
-    addRange(prod?.start, prod?.end);
-    if (order.timelineData.shipping) addRange(order.timelineData.shipping.start, order.timelineData.shipping.end);
+    const prod = order.timelineData.production || {};
+
+    // production start: explicit start or fallback to order.createdAt
+    const productionStart = prod.start ? new Date(prod.start) : new Date(order.createdAt);
+
+    // decide production duration: prefer duration_days, otherwise duration_days_max
+    const productionDuration = prod.duration_days || prod.duration_days_max || 0;
+
+    const productionEnd = prod.end
+      ? new Date(prod.end)
+      : new Date(productionStart.getTime() + productionDuration * DAY_MS);
+
+    addRangeDates(productionStart, productionEnd);
+
+    const shipping = order.timelineData.shipping;
+    if (shipping) {
+      const shippingStart = shipping.start ? new Date(shipping.start) : productionEnd;
+      const shippingDuration = shipping.duration_days_max || shipping.duration_days || 0;
+      const shippingEnd = shipping.end
+        ? new Date(shipping.end)
+        : new Date(shippingStart.getTime() + shippingDuration * DAY_MS);
+
+      addRangeDates(shippingStart, shippingEnd);
+    }
   } else {
     // fallback to createdAt as single-day event
-    if (order.createdAt) days.push(new Date(order.createdAt).toISOString().slice(0,10));
+    if (order.createdAt) days.push(format(new Date(order.createdAt), 'yyyy-MM-dd'));
   }
 
   return Array.from(new Set(days));
@@ -63,22 +87,28 @@ export default function CalendarView({ orders, onOrderClick, dayMaxEvents = 3 }:
   const days = useMemo(() => eachDayOfInterval({ start: monthStart, end: monthEnd }), [monthStart, monthEnd]);
 
   // map date (YYYY-MM-DD) to orders intersecting that day
+  // each entry contains metadata whether this day is the start or end of that order
   const dayOrderMap = useMemo(() => {
-    const map: Record<string, Order[]> = {};
+    type Item = { order: Order; isStart: boolean; isEnd: boolean };
+    const map: Record<string, Item[]> = {};
     orders.forEach(order => {
-      const orderDays = getOrderDays(order);
+      const orderDays = getOrderDays(order).sort();
+      if (orderDays.length === 0) return;
+      const first = orderDays[0];
+      const last = orderDays[orderDays.length - 1];
+
       orderDays.forEach(d => {
+        const date = parseISO(d);
         // only include if in current month
-        const date = new Date(d);
         if (date >= monthStart && date <= monthEnd) {
           map[d] = map[d] || [];
-          map[d].push(order);
+          map[d].push({ order, isStart: d === first, isEnd: d === last });
         }
       });
     });
     // sort deterministic by orderId
     Object.keys(map).forEach(k => {
-      map[k].sort((a,b) => (a.orderId || '').localeCompare(b.orderId || ''));
+      map[k].sort((a,b) => (a.order.orderId || '').localeCompare(b.order.orderId || ''));
     });
     return map;
   }, [orders, monthStart, monthEnd]);
@@ -139,7 +169,7 @@ export default function CalendarView({ orders, onOrderClick, dayMaxEvents = 3 }:
           </Popover>
           <Button size="sm" onClick={nextMonth} aria-label="Next month">›</Button>
         </div>
-        <div className="text-sm text-muted-foreground">Tap an event to view details</div>
+        <div className="text-sm text-muted-foreground">Click an event to view details</div>
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-sm">
@@ -148,7 +178,7 @@ export default function CalendarView({ orders, onOrderClick, dayMaxEvents = 3 }:
         ))}
 
         {days.map(day => {
-          const key = day.toISOString().slice(0,10);
+    const key = format(day, 'yyyy-MM-dd');
           const eventList = dayOrderMap[key] || [];
           const isToday = isSameDay(day, new Date());
           return (
@@ -160,28 +190,84 @@ export default function CalendarView({ orders, onOrderClick, dayMaxEvents = 3 }:
               </div>
 
               <div className="space-y-1">
-                {eventList.slice(0, dayMaxEvents).map(order => (
-                  <Popover key={order.orderId}>
-                    <PopoverTrigger asChild>
-                      <button
-                        onClick={() => onOrderClick?.(order)}
-                        className={cn('w-full text-left text-xs truncate px-1 py-0.5 rounded', STATUS_COLOR[order.status] || 'bg-slate-400', 'text-white')}
-                      >
-                        {order.productSpec?.product_specifications?.product_name || order.productSpec?.productName || order.orderId}
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                      <div className="space-y-2 max-w-xs">
-                        <div className="font-semibold text-sm">{order.productSpec?.product_specifications?.product_name || order.productSpec?.productName || order.orderId}</div>
-                        <div className="text-xs text-muted-foreground">Order: {order.orderId}</div>
-                        <div className="text-xs">Status: <span className="font-medium">{order.status}</span></div>
-                        <div className="pt-2 flex justify-end">
-                          <Button size="sm" variant="ghost" onClick={() => onOrderClick?.(order)}>Open</Button>
+                {eventList.slice(0, dayMaxEvents).map(item => {
+                  const { order, isStart, isEnd } = item;
+                  const singleDay = isStart && isEnd;
+                  const pillRounded = singleDay
+                    ? 'rounded-md'
+                    : isStart && !isEnd
+                    ? 'rounded-l-md rounded-r-none'
+                    : isEnd && !isStart
+                    ? 'rounded-r-md rounded-l-none'
+                    : 'rounded-none';
+
+                  return (
+                    <Popover key={order.orderId}>
+                      <PopoverTrigger asChild>
+                        <button
+                          onClick={() => onOrderClick?.(order)}
+                          className={cn('w-full text-left text-xs truncate px-1 py-0.5', STATUS_COLOR[order.status] || 'bg-slate-400', 'text-white', pillRounded)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center truncate">
+                              {isStart && (
+                                <span className="inline-block w-2 h-2 rounded-full bg-white/80 mr-1" aria-hidden />
+                              )}
+                              <span className="truncate">
+                                {order.productSpec?.product_specifications?.product_name || order.productSpec?.productName || order.orderId}
+                              </span>
+                            </div>
+                            {isEnd && (
+                              <span className="inline-block w-2 h-2 rounded-full bg-white/80 ml-2" aria-hidden />
+                            )}
+                          </div>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent>
+                        <div className="space-y-2 max-w-xs">
+                          <div className="font-semibold text-sm">{order.productSpec?.product_specifications?.product_name || order.productSpec?.productName || order.orderId}</div>
+                          <div className="text-xs text-muted-foreground">Order: {order.orderId}</div>
+
+                          {order.quoteId && (
+                            <div className="text-xs">Quote: <span className="font-medium">{order.quoteId}</span></div>
+                          )}
+
+                          {order.supplierId && (
+                            <div className="text-xs">Supplier: <span className="font-medium">{order.supplierId}</span></div>
+                          )}
+
+                          <div className="text-xs">Status: <span className="font-medium">{order.status}</span></div>
+
+                          {order.timelineData?.production && (
+                            <div className="text-xs">
+                              Production: <span className="font-medium">
+                                {order.timelineData.production.start ? format(new Date(order.timelineData.production.start), 'MMM d, yyyy') : '—'}
+                                {order.timelineData.production.end ? ` – ${format(new Date(order.timelineData.production.end), 'MMM d, yyyy')}` : ''}
+                              </span>
+                            </div>
+                          )}
+
+                          {order.timelineData?.shipping && (
+                            <div className="text-xs">
+                              Shipping: <span className="font-medium">
+                                {order.timelineData.shipping.start ? format(new Date(order.timelineData.shipping.start), 'MMM d, yyyy') : '—'}
+                                {order.timelineData.shipping.end ? ` – ${format(new Date(order.timelineData.shipping.end), 'MMM d, yyyy')}` : ''}
+                              </span>
+                            </div>
+                          )}
+
+                          {order.trackingNumber && (
+                            <div className="text-xs">Tracking: <span className="font-medium">{order.trackingNumber}</span></div>
+                          )}
+
+                          <div className="pt-2 flex justify-end">
+                            <Button size="sm" variant="ghost" onClick={() => onOrderClick?.(order)}>Open</Button>
+                          </div>
                         </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                ))}
+                      </PopoverContent>
+                    </Popover>
+                  );
+                })}
 
                 {eventList.length > dayMaxEvents && (
                   <Popover>
@@ -190,17 +276,17 @@ export default function CalendarView({ orders, onOrderClick, dayMaxEvents = 3 }:
                     </PopoverTrigger>
                     <PopoverContent>
                       <div className="space-y-2 max-h-64 overflow-auto">
-                        {eventList.map(o => (
-                          <div key={o.orderId} className="flex items-center justify-between gap-2">
+                        {eventList.map(it => (
+                          <div key={it.order.orderId} className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
-                              <div className={cn('w-2 h-2 rounded-full', STATUS_COLOR[o.status] || 'bg-slate-400')} />
+                              <div className={cn('w-2 h-2 rounded-full', STATUS_COLOR[it.order.status] || 'bg-slate-400')} />
                               <div className="text-xs">
-                                <div className="font-medium">{o.productSpec?.product_specifications?.product_name || o.productSpec?.productName || o.orderId}</div>
-                                <div className="text-muted-foreground text-[11px]">{o.orderId}</div>
+                                <div className="font-medium">{it.order.productSpec?.product_specifications?.product_name || it.order.productSpec?.productName || it.order.orderId}</div>
+                                <div className="text-muted-foreground text-[11px]">{it.order.orderId}</div>
                               </div>
                             </div>
                             <div>
-                              <Button size="sm" variant="ghost" onClick={() => onOrderClick?.(o)}>View</Button>
+                              <Button size="sm" variant="ghost" onClick={() => onOrderClick?.(it.order)}>View</Button>
                             </div>
                           </div>
                         ))}
