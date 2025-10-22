@@ -1,6 +1,10 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 import OrderStatus from '@/components/order/OrderStatus';
+
+
+vi.stubGlobal('matchMedia', () => ({ matches: false }));
 
 describe('OrderStatus', () => {
   it('renders segments and humanized labels', () => {
