@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Package, ExternalLink, ChevronDown, ChevronUp, MapPin, AlertCircle, CreditCard } from 'lucide-react';
+import { Package, ExternalLink, ChevronDown, ChevronUp, MapPin, AlertCircle, CreditCard, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { PresignedImage } from '@/components/quote/PresignedImage';
 import { Button } from '@/components/ui/button';
 import { FixedSizeList } from 'react-window';
@@ -21,6 +21,7 @@ import { FixedSizeList } from 'react-window';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import TimelineView from '@/components/order/TimelineView';
+import CalendarView from '@/components/order/CalendarView';
 import { PriceChangeModal } from '@/components/order/PriceChangeModal';
 import { PriceChanges } from '@/lib/api/orderClient';
 import OrderCard from '@/components/order/OrderCard';
@@ -32,7 +33,7 @@ export default function BuyerOrderList() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [trackingDetails, setTrackingDetails] = useState<Record<string, any>>({});
   const [loadingTracking, setLoadingTracking] = useState<Record<string, boolean>>({});
-  const [viewMode, setViewMode] = useState<'list' | 'timeline'>('timeline');
+  const [viewMode, setViewMode] = useState<'list' | 'timeline' | 'calendar'>('timeline');
   const { sortedOrders, sortOption, setSortOption } = useOrderSort(orders);
   // Search state (debounced)
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -483,6 +484,23 @@ export default function BuyerOrderList() {
   {/* Dashboard visualizations */}
   <OrderDashboard orders={filteredSortedOrders} />
 
+  <div className="mt-3 flex items-center gap-2">
+    <button
+      aria-label="Timeline view"
+      onClick={() => setViewMode('timeline')}
+      className={`p-2 rounded ${viewMode === 'timeline' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}
+    >
+      <Clock className="w-4 h-4" />
+    </button>
+    <button
+      aria-label="Calendar view"
+      onClick={() => setViewMode('calendar')}
+      className={`p-2 rounded ${viewMode === 'calendar' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}
+    >
+      <CalendarIcon className="w-4 h-4" />
+    </button>
+  </div>
+
       <TabsContent value="active">
         {viewMode === 'timeline' ? (
           <TimelineView
@@ -493,8 +511,13 @@ export default function BuyerOrderList() {
             onContinuePayment={handleContinuePayment}
             continuingPayment={continuingPayment}
           />
-        ) : (
-          (activeOrders.length > 20) ? (
+        ) : viewMode === 'calendar' ? (
+          <CalendarView
+            orders={activeOrders}
+            onOrderClick={(order) => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}
+            dayMaxEvents={3}
+          />
+        ) : ( (activeOrders.length > 20) ? (
             <FixedSizeList
               height={600}
               itemCount={activeOrders.length}
@@ -554,8 +577,13 @@ export default function BuyerOrderList() {
             onContinuePayment={handleContinuePayment}
             continuingPayment={continuingPayment}
           />
-        ) : (
-          (shippingOrders.length > 20) ? (
+        ) : viewMode === 'calendar' ? (
+          <CalendarView
+            orders={shippingOrders}
+            onOrderClick={(order) => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}
+            dayMaxEvents={3}
+          />
+        ) : ( (shippingOrders.length > 20) ? (
             <FixedSizeList
               height={600}
               itemCount={shippingOrders.length}
@@ -615,8 +643,13 @@ export default function BuyerOrderList() {
             onContinuePayment={handleContinuePayment}
             continuingPayment={continuingPayment}
           />
-        ) : (
-          (completedOrders.length > 20) ? (
+        ) : viewMode === 'calendar' ? (
+          <CalendarView
+            orders={completedOrders}
+            onOrderClick={(order) => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}
+            dayMaxEvents={3}
+          />
+        ) : ( (completedOrders.length > 20) ? (
             <FixedSizeList
               height={600}
               itemCount={completedOrders.length}
